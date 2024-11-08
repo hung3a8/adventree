@@ -96,6 +96,7 @@ data BirdName = Pigeon
   | Roc
   deriving (Show, Eq)
 
+-- bird name + description + chance + rarity + price + price deviation (gain or loss percentage from the base price)
 type BirdType = (BirdName, String, Float, BirdRarity)
 
 data StoreName = PigeonClub

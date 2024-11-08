@@ -71,3 +71,54 @@ getRandomBird rarities gen =
         | acc + weight >= randVal = ((name, desc, weight, rarity), gen')
         | otherwise = selectBird (acc + weight) xs
   in selectBird 0 filteredBirds
+
+-- Bird name -> price -> (min deviation, max deviation)
+birdPriceBoard :: [(BirdName, (Price, (Float, Float)))]
+birdPriceBoard = [
+  (Pigeon, (10, (-0.1, 0.1))),
+  (Sparrow, (15, (-0.15, 0.15))),
+  (Crow, (15, (-0.15, 0.15))),
+  (Seagull, (20, (-0.15, 0.15))),
+
+  (Robin, (25, (-0.2, 0.2))),
+  (BlueJay, (30, (-0.1, 0.2))),
+  (Starling, (40, (-0.2, 0.1))),
+  (Finch, (35, (-0.1, 0.2))),
+  (Duck, (40, (-0.2, 0.1))),
+
+  (Cardinal, (50, (-0.2, 0.2))),
+  (Swallow, (55, (-0.1, 0.2))),
+  (Woodpecker, (60, (-0.2, 0.1))),
+  (Magpie, (65, (-0.1, 0.2))),
+  (Mockingbird, (70, (-0.2, 0.1))),
+  (Hummingbird, (75, (-0.1, 0.2))),
+  (Swan, (80, (-0.2, 0.1))),
+
+  (Eagle, (100, (-0.2, 0.2))),
+  (Owl, (110, (-0.1, 0.2))),
+  (Kingfisher, (120, (-0.2, 0.1))),
+  (Pelican, (130, (-0.1, 0.2))),
+  (Crane, (140, (-0.2, 0.1))),
+  (Toucan, (150, (-0.1, 0.2))),
+  (Cockatoo, (160, (-0.2, 0.1))),
+
+  (Albatross, (200, (-0.2, 0.2))),
+  (Flamingo, (220, (-0.1, 0.2))),
+  (Peacock, (240, (-0.2, 0.1))),
+  (Penguin, (260, (-0.1, 0.2))),
+  (Kiwi, (280, (-0.2, 0.1))),
+  (HarpyEagle, (300, (-0.1, 0.2))),
+
+  (Phoenix, (500, (-0.2, 0.2))),
+  (Griffin, (600, (-0.1, 0.2))),
+  (Roc, (700, (-0.2, 0.1)))
+  ]
+
+-- random the deviation of the bird price, then calculate the final price
+getBirdPriceQuote :: (RandomGen g) => BirdType -> g -> (Price, g)
+getBirdPriceQuote (birdName, _, _, _) g = case lookup birdName birdPriceBoard of
+  Just (basePrice, (minDev, maxDev)) ->
+    let (deviation, g') = randomR (minDev, maxDev) g
+        price = round $ fromIntegral basePrice * (1 + deviation)
+    in (price, g')
+  Nothing -> error "Bird not found in bird price board"
