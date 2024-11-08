@@ -64,29 +64,45 @@ repl = do
               go gameState g
 
             Just GoLeft ->
-              case z of
-                (c, B node t1 t2) ->
-                  go (updateBinZipAtLevel gameState (B0 c (reveal t2) node, reveal t1) level) g
-                (c, L _) -> do
-                  putStrLn "You cannot climb any further."
+              -- if stamina < 1, do not allow the player to move
+              if stamina < 1
+                then do
+                  putStrLn "You are too tired to move."
                   go gameState g
+                else
+                  case z of
+                    (c, B node t1 t2) ->
+                      go (updateStamina (updateBinZipAtLevel gameState (B0 c (reveal t2) node, reveal t1) level) (-1)) g
+                    (c, L _) -> do
+                      putStrLn "You cannot climb any further."
+                      go gameState g
 
             Just GoRight -> do
-              case z of
-                (c, B node t1 t2) ->
-                  go (updateBinZipAtLevel gameState (B1 (reveal t1) c node, reveal t2) level) g
-                (c, L _) -> do
-                  putStrLn "You cannot climb any further."
+              if stamina < 1
+                then do
+                  putStrLn "You are too tired to move."
                   go gameState g
+                else
+                  case z of
+                    (c, B node t1 t2) ->
+                      go (updateStamina (updateBinZipAtLevel gameState (B1 (reveal t1) c node, reveal t2) level) (-1)) g
+                    (c, L _) -> do
+                      putStrLn "You cannot climb any further."
+                      go gameState g
 
             Just GoDown ->
-              case z of
-                (B0 c t2 node, t) -> go (updateBinZipAtLevel gameState (c, B node t t2) level) g
-                (B1 t1 c node, t) -> go (updateBinZipAtLevel gameState (c, B node t1 t) level) g
-                (Hole,t) -> do
-                  putStrLn "You are already at the root."
-                  putStrLn "You cannot climb down any further."
+              if stamina < 1
+                then do
+                  putStrLn "You are too tired to move."
                   go gameState g
+                else
+                  case z of
+                    (B0 c t2 node, t) -> go (updateStamina (updateBinZipAtLevel gameState (c, B node t t2) level) (-1)) g
+                    (B1 t1 c node, t) -> go (updateStamina (updateBinZipAtLevel gameState (c, B node t1 t) level) (-1)) g
+                    (Hole, t) -> do
+                      putStrLn "You are already at the root."
+                      putStrLn "You cannot climb down any further."
+                      go gameState g
 
             Just Display -> do
               let (s, hasParents, hasMoreBranches) = drawCurrentSubTreeBinZip z
@@ -170,10 +186,15 @@ repl = do
                   go gameState g
 
                 Just BirdCapture -> do
-                  putStrLn "Nice! You captured the bird."
-                  putStrLn ("[ " ++ show node ++ " ] was added to your capture pouch.")
-                  let newTree = replaceBinZipCurrentNode z (NodeType Empty True)
-                  go (updateBinZipAtLevel (addBirdToCapturePouch gameState bird) newTree level) g
+                  if stamina < 5
+                    then do
+                      putStrLn "You are too tired to capture the bird."
+                      go gameState g
+                    else do
+                      putStrLn "Nice! You captured the bird."
+                      putStrLn ("[ " ++ show node ++ " ] was added to your capture pouch.")
+                      let newTree = replaceBinZipCurrentNode z (NodeType Empty True)
+                      go (updateStamina (updateBinZipAtLevel (addBirdToCapturePouch gameState bird) newTree level) (-5)) g
 
                 Just BirdFeed -> do
                   putStrLn "You fed the bird."
