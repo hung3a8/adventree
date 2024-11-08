@@ -31,7 +31,7 @@ maxStamina = 50
 
 initialState :: GameState
 -- initial state is the list of all trees a
-initialState = (map (Hole,) trees, 0, Idle, maxStamina, [], 1000000, [])
+initialState = (map (Hole,) trees, 0, Idle, maxStamina, [], 0, [])
 
 repl :: IO ()
 repl = do
