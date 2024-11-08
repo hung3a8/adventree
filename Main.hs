@@ -9,7 +9,7 @@ import Data.Tree (drawTree)
 import System.Posix.Internals (puts)
 
 tree :: Bin NodeType
-tree = generateTreeWithSeed 42 0
+tree = generateTreeWithSeed 42 10
 
 initialState :: GameState
 initialState = ((Hole, tree), Idle, [], 0)
@@ -84,7 +84,7 @@ repl = do
 
               Just ShowCapturePouch -> do
                 putStrLn "You have captured the following birds:"
-                mapM_ (\(index, (name, _, _, rarity)) -> putStrLn (show index ++ ": " ++ name ++ " (" ++ show rarity ++ ")")) (zip [1..] capturePouch)
+                mapM_ (\(index, (name, _, _, rarity)) -> putStrLn (show index ++ ": " ++ show name ++ " (" ++ show rarity ++ ")")) (zip [1..] capturePouch)
                 go (z, state, capturePouch, goldPouch)
 
               Just ShowGoldPouch -> do
@@ -136,7 +136,7 @@ repl = do
                   go (z, state, capturePouch, goldPouch)
 
                 Just BirdDisplay -> do
-                  putStrLn ("Bird name: " ++ name)
+                  putStrLn ("Bird name: " ++ show name)
                   putStrLn ("Rarity: " ++ show rarity)
                   putStrLn ("Description: " ++ description)
                   putStrLn ("Chance to find one: " ++ show (chance * 100) ++ "%")

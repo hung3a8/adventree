@@ -37,8 +37,44 @@ type GameState = (BinZip NodeType, PlayerState, CapturePouch, GoldPouch)
 
 type TreeLevel = Int
 
--- BirdType = (birdName, birdDescription, birdRarity)
-type BirdType = (String, String, Float, BirdRarity)
+data BirdName = Pigeon
+  | Sparrow
+  | Crow
+  | Seagull
+  | Robin
+  | BlueJay
+  | Starling
+  | Finch
+  | Duck
+  | Goose
+  | Cardinal
+  | Swallow
+  | Woodpecker
+  | Magpie
+  | Mockingbird
+  | Hummingbird
+  | Swan
+  | Heron
+  | Eagle
+  | Owl
+  | Kingfisher
+  | Pelican
+  | Crane
+  | Toucan
+  | Cockatoo
+  | Albatross
+  | Flamingo
+  | Peacock
+  | Penguin
+  | Kiwi
+  | HarpyEagle
+  | Kakapo
+  | Phoenix
+  | Griffin
+  | Roc
+  deriving (Show, Eq)
+
+type BirdType = (BirdName, String, Float, BirdRarity)
 
 data BirdRarity = VeryCommon | Common | Uncommon | Rare | VeryRare | Mythological
   deriving (Show, Eq)
@@ -55,5 +91,5 @@ data NodeType = NodeType BaseNodeType Bool
 
 instance Show NodeType where
   show (NodeType _ False) = "???"
-  show (NodeType (Bird (name, _, _, rarity)) True) = name ++ " (" ++ show rarity ++ ")"
+  show (NodeType (Bird (name, _, _, rarity)) True) = show name ++ " (" ++ show rarity ++ ")"
   show (NodeType baseNodeType True) = show baseNodeType
