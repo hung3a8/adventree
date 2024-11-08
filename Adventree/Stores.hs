@@ -5,11 +5,11 @@ import Adventree.Types
 -- Store data
 stores :: [StoreType]
 stores = [
-  (PigeonClub, "A club for pigeons.", [(BirdSeed, 10), (EnergyDrink, 5)]),
-  (DuckHouse, "A house for ducks.", [(BirdCage, 20), (EnergyDrink, 5)]),
-  (EagleDC, "A DC for eagles.", [(BirdCage, 20), (EnergyDrink, 5)]),
-  (FlamingoResort, "A resort for flamingos.", [(BirdSeed, 10), (BirdCage, 20), (EnergyDrink, 5)]),
-  (PhoenixHall, "A hall for phoenixes.", [(BirdSeed, 10), (BirdCage, 20), (EnergyDrink, 5)])
+  (PigeonClub, "A club for pigeons.", [(BirdSeed, 200), (EnergyDrink, 100)]),
+  (DuckHouse, "A house for ducks.", [(BirdCage, 500), (EnergyDrink, 100)]),
+  (EagleDC, "A DC for eagles.", [(BirdCage, 500), (EnergyDrink, 100)]),
+  (FlamingoResort, "A resort for flamingos.", [(BirdSeed, 200), (BirdCage, 500), (EnergyDrink, 100)]),
+  (PhoenixHall, "A hall for phoenixes.", [(BirdSeed, 200), (BirdCage, 500), (EnergyDrink, 100)])
   ]
 
 -- Get store by name
