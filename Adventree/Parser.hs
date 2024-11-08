@@ -91,12 +91,12 @@ number =
 
 -- Group of IdleCmd parsers
 parseIdleCmd :: Parser String IdleCmd
-parseIdleCmd = parseClimb <|> parseIntoAction <|> parseShowState <|> parseDisplay <|> parseDisplayCheat <|> parseQuit
+parseIdleCmd = parseClimb <|> parseIntoAction <|> parseSleep <|> parseShowState <|> parseDisplay <|> parseDisplayCheat <|> parseQuit
 
 -- Parse a climbing command.
 parseClimb :: Parser String IdleCmd
 parseClimb = do
-  match "climb" <|> match "go" <|> match "move" <|> match "m"
+  match "climb" <|> match "go" <|> match "move" <|> match "g"
   (match "down" >> return GoDown) <|>
     (match "left" >> return GoLeft) <|>
     (match "right" >> return GoRight)
@@ -106,11 +106,17 @@ parseIntoAction = do
   match "action" <|> match "a"
   return IntoAction
 
+parseSleep :: Parser String IdleCmd
+parseSleep = do
+  match "sleep" <|> match "s"
+  return Sleep
+
 parseShowState :: Parser String IdleCmd
 parseShowState = do
-  match "show" <|> match "s"
-  ((match "capture" <|> match "pouch") >> return ShowCapturePouch) <|>
-    ((match "gold" <|> match "money") >> return ShowGoldPouch)
+  match "display" <|> match "d"
+  (match "capture" >> return ShowCapturePouch) <|>
+    (match "gold" >> return ShowGoldPouch) <|>
+    (match "item" >> return ShowItemPouch)
 
 parseDisplay :: Parser String IdleCmd
 parseDisplay = do
@@ -130,27 +136,38 @@ parseQuit = do
 
 -- Group of ActionCmd parsers
 parseActionCmd :: Parser String ActionCmd
-parseActionCmd = parseBirdCapture <|> parseBirdFlee <|> parseBirdFeed <|> parseBirdDisplay <|> parseQuitAction
+parseActionCmd = parseBirdCapture
+  <|> parseBirdFeed
+  <|> parseStoreBuy
+  <|> parseStoreSell
+  <|> parseActionDisplay
+  <|> parseQuitAction
 
 parseBirdCapture :: Parser String ActionCmd
 parseBirdCapture = do
-  match "capture" <|> match "catch" <|> match "c"
+  match "capture" <|> match "c"
   return BirdCapture
-
-parseBirdFlee :: Parser String ActionCmd
-parseBirdFlee = do
-  match "flee" <|> match "run" <|> match "ff"
-  return BirdFlee
 
 parseBirdFeed :: Parser String ActionCmd
 parseBirdFeed = do
-  match "feed" <|> match "give" <|> match "f"
+  match "feed" <|> match "f"
   return BirdFeed
 
-parseBirdDisplay :: Parser String ActionCmd
-parseBirdDisplay = do
+parseStoreBuy :: Parser String ActionCmd
+parseStoreBuy = do
+  match "buy" <|> match "b"
+  return StoreBuy
+
+parseStoreSell :: Parser String ActionCmd
+parseStoreSell = do
+  match "sell" <|> match "s"
+  return StoreSell
+
+parseActionDisplay :: Parser String ActionCmd
+parseActionDisplay = do
   match "display" <|> match "d"
   (match "bird" >> return BirdDisplay) <|>
+    (match "store" >> return StoreDisplay) <|>
     (match "tree" >> return TreeDisplay)
 
 parseQuitAction :: Parser String ActionCmd

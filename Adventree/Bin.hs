@@ -23,9 +23,9 @@ displayNode :: NodeType -> String
 displayNode node = case node of
   NodeType _ False -> "You see a mysterious node."
   NodeType (Bird bird) True -> "You see a bird named " ++ show node ++ "."
-  NodeType (Store name) True -> "You see a store named " ++ name ++ "."
+  NodeType (Store store) True -> "You arrived at " ++ show node ++ ". It has a built-in store. You may want to check it out."
   NodeType Empty True -> "You see an empty node."
-  NodeType (Portal dest) True -> "You see a portal to tree " ++ show dest ++ "."
+  NodeType (Portal level) True -> "You see a portal level " ++ show level ++ "."
 
 
 treeCxtFromBinCxt :: Show a => BinCxt a -> Tree String -> Tree String
@@ -58,15 +58,18 @@ drawBin = drawVerticalTree . treeFromBin
 drawBinZip :: Show a => BinZip a -> String
 drawBinZip = drawVerticalTree . treeFromBinZip
 
+maxViewDepth :: Int
+maxViewDepth = 4
+
 -- Function to draw the current subtree with a depth limit of 5 and return two booleans
 drawCurrentSubTreeBinZip :: Show a => BinZip a -> (String, Bool, Bool)
 drawCurrentSubTreeBinZip (c, t) = (drawVerticalTree limitedTree, hasParents c, hasMoreBranches t)
   where
-    limitedTree = limitDepth 5 $ treeFromBin t
+    limitedTree = limitDepth maxViewDepth $ treeFromBin t
     hasParents Hole = False
     hasParents _ = True
     hasMoreBranches (L _) = False
-    hasMoreBranches (B _ t1 t2) = depthExceedsLimit 5 t1 || depthExceedsLimit 5 t2
+    hasMoreBranches (B _ t1 t2) = depthExceedsLimit maxViewDepth t1 || depthExceedsLimit maxViewDepth t2
 
 -- Helper function to check if the depth of a Bin tree exceeds a limit
 depthExceedsLimit :: Int -> Bin a -> Bool
