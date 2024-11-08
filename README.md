@@ -27,7 +27,7 @@ Binary Tree World is an interactive text-based adventure game where you explore 
 - **Portal Locations**: Portals are randomly placed within the tree, and you can find them as you explore.
 
 ### Items
-- **Buy Items**: Find and collect various items as you explore the tree. Items can help you capture birds, recover stamina, and more.
+- **Collect Items**: Find and collect various items as you explore the tree. Items can help you capture birds, recover stamina, and more.
 - **Use Items**: Use items from your pouch to aid your journey. The `use` command allows you to use an item.
 
 ### Stamina
@@ -62,5 +62,8 @@ Binary Tree World is an interactive text-based adventure game where you explore 
   - `display tree` or `d tree`: Display tree information.
 - **Jump (j)**: Use a portal to jump to a different level.
 - **Quit Action (q)**: End the current action.
+
+## Dependencies
+- **pretty-tree**: Used for rendering the binary trees in a visually appealing format. This is important as our tree is relatively large and complex when fully explored and printed.
 
 Enjoy exploring the Binary Tree World and uncovering its secrets!
