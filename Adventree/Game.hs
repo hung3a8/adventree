@@ -36,6 +36,20 @@ addItemToItemPouch (zs, level, state, stamina, capturePouch, goldPouch, itemPouc
         then (itemName, itemQuantity + quantity) : rest
         else (itemName, itemQuantity) : updateItemPouch item quantity rest
 
+removeItemFromItemPouch :: GameState -> Item -> Int -> GameState
+removeItemFromItemPouch (zs, level, state, stamina, capturePouch, goldPouch, itemPouch) item quantity =
+  (zs, level, state, stamina, capturePouch, goldPouch, updateItemPouch item quantity itemPouch)
+  where
+    updateItemPouch :: Item -> Int -> ItemPouch -> ItemPouch
+    -- find the item in the item pouch, decrease the quantity if it exists, and remove the item if the quantity is 0
+    updateItemPouch item quantity [] = []
+    updateItemPouch item quantity ((itemName, itemQuantity) : rest) =
+      if itemName == item
+        then if itemQuantity - quantity > 0
+               then (itemName, itemQuantity - quantity) : rest
+               else rest
+        else (itemName, itemQuantity) : updateItemPouch item quantity rest
+
 updateBinZipAtLevel :: GameState -> BinZip NodeType -> TreeLevel -> GameState
 updateBinZipAtLevel (zs, level, state, stamina, capturePouch, goldPouch, itemPouch) z updateAtLevel =
   (updateBinZip' zs z updateAtLevel, level, state, stamina, capturePouch, goldPouch, itemPouch) where

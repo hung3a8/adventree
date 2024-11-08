@@ -134,18 +134,18 @@ repl = do
                       putStrLn "You woke up feeling refreshed."
                       putStrLn "You feel the branch above you is shaking. Better go check it out."
                       let newz = (fst z, t)
-                      go (updateStamina (updateBinZipAtLevel gameState newz level) maxStamina) g''
+                      go (updateStamina (updateBinZipAtLevel gameState newz level) (max maxStamina stamina)) g''
                     Nothing -> do
                       putStrLn "You woke up feeling refreshed."
                       putStrLn "You did not find any bird nearby."
-                      go (setStamina gameState maxStamina) g''
+                      go (setStamina gameState (max maxStamina stamina)) g''
                 else do
                   putStrLn "You woke up feeling refreshed."
-                  go (setStamina gameState maxStamina) g'
+                  go (setStamina gameState (max maxStamina stamina)) g'
 
             Just ShowCapturePouch -> do
               putStrLn "You have captured the following birds:"
-              mapM_ (\(index, (name, _, _, rarity)) -> putStrLn (show index ++ ": " ++ show name ++ " (" ++ show rarity ++ ")")) (zip [1..] capturePouch)
+              mapM_ (\(index, (name, _, _, rarity, _)) -> putStrLn (show index ++ ": " ++ show name ++ " (" ++ show rarity ++ ")")) (zip [1..] capturePouch)
               go gameState g
 
             Just ShowGoldPouch -> do
@@ -179,7 +179,7 @@ repl = do
               hFlush stdout
               line <- getLine
 
-              let (name, description, chance, rarity) = bird
+              let (name, description, chance, rarity, difficulty) = bird
               case parseInput parseActionCmd line of
                 Nothing -> do
                   putStrLn "I'm sorry, I do not understand."
@@ -191,20 +191,82 @@ repl = do
                       putStrLn "You are too tired to capture the bird."
                       go gameState g
                     else do
-                      putStrLn "Nice! You captured the bird."
-                      putStrLn ("[ " ++ show node ++ " ] was added to your capture pouch.")
-                      let newTree = replaceBinZipCurrentNode z (NodeType Empty True)
-                      go (updateStamina (updateBinZipAtLevel (addBirdToCapturePouch gameState bird) newTree level) (-5)) g
+                      -- Random between 0 and 100, if the random number is larger than the difficulty, the bird is captured
+                      -- putStrLn "Nice! You captured the bird."
+                      -- putStrLn ("[ " ++ show node ++ " ] was added to your capture pouch.")
+                      -- let newTree = replaceBinZipCurrentNode z (NodeType Empty True)
+                      -- go (updateStamina (updateBinZipAtLevel (addBirdToCapturePouch gameState bird) newTree level) (-5)) g
+                      let (randomNumber, g') = randomR (0, 100 :: Int) g
+                      if randomNumber >= difficulty
+                        then do
+                          putStrLn "Nice! You captured the bird."
+                          putStrLn ("[ " ++ show node ++ " ] was added to your capture pouch.")
+                          let newTree = replaceBinZipCurrentNode z (NodeType Empty True)
+                          go (updateStamina (updateBinZipAtLevel (addBirdToCapturePouch gameState bird) newTree level) (-5)) g'
+                        else do
+                          putStrLn "The bird is too quick for you. You missed the chance. But the bird stays there."
+                          go (updateStamina gameState (-5)) g'
 
-                Just BirdFeed -> do
-                  putStrLn "You fed the bird."
-                  go gameState g
+
+                Just UseItem -> do
+                  -- Show list of items, ask for item index
+                  putStrLn "You look at your item pouch to see if there are any items you want to use."
+                  if null itemPouch
+                    then do
+                      putStrLn "You do not have any items to use."
+                      go gameState g
+                    else do
+                      putStrLn "You have the following items:"
+                      mapM_ (\(index, (name, quantity)) -> putStrLn (show index ++ ": " ++ show name ++ " (" ++ show quantity ++ ")")) (zip [1..] itemPouch)
+                      putStr "Which item would you like to use? "
+                      hFlush stdout
+                      itemIndex <- getLine
+                      let index = read itemIndex :: Int
+                      if index < 1 || index > length itemPouch
+                        then do
+                          putStrLn "Invalid item index."
+                          go gameState g
+                        else do
+                          let (itemName, quantity) = itemPouch !! (index - 1)
+                          putStrLn ("You used [ " ++ show itemName ++ " ].")
+
+                          -- in case the item is a bird seed, bird cage, or energy drink, update the game state
+                          -- else do nothing
+                          case itemName of
+                            -- Update current bird using feedBird
+                            BirdSeed -> do
+                              let birdAfterFed = feedBird bird
+                              putStrLn "You fed the bird. The bird looks happier."
+                              let newBinZip = replaceBinZipCurrentNode z (NodeType (Bird birdAfterFed) True)
+                              go (updateStamina (removeItemFromItemPouch (updateBinZipAtLevel gameState newBinZip level) itemName 1) (-5)) g
+
+                            -- Bird cage can immediately capture a bird, but cost 30 stamina
+                            BirdCage -> do
+                              if stamina < 30
+                                then do
+                                  putStrLn "You are too tired to capture the bird."
+                                  go gameState g
+                                else do
+                                  let (bird, g') = getRandomBird [VeryCommon, Common, Uncommon, Rare, VeryRare, Mythological] g
+                                  putStrLn "You used the bird cage and captured a bird."
+                                  putStrLn ("[ " ++ show bird ++ " ] was added to your capture pouch.")
+                                  go (updateStamina (removeItemFromItemPouch (addBirdToCapturePouch gameState bird) itemName 1) (-30)) g'
+
+                            -- recover 50 stamina, exceed the max stamina
+                            EnergyDrink -> do
+                              putStrLn "You used the energy drink and feel refreshed."
+                              go (updateStamina (removeItemFromItemPouch gameState itemName 1) 50) g
+
+                            _ -> do
+                              putStrLn "You cannot use this item here."
+                              go gameState g
 
                 Just BirdDisplay -> do
                   putStrLn ("Bird name: " ++ show name)
                   putStrLn ("Rarity: " ++ show rarity)
                   putStrLn ("Description: " ++ description)
                   putStrLn ("Chance to find one: " ++ show (chance * 100) ++ "%")
+                  putStrLn ("Difficulty: " ++ show difficulty)
                   go gameState g
 
                 Just TreeDisplay -> do
@@ -267,7 +329,7 @@ repl = do
                       go gameState g
                     else do
                       putStrLn "You have the following birds:"
-                      mapM_ (\(index, (name, _, _, rarity)) -> putStrLn (show index ++ ": " ++ show name ++ " (" ++ show rarity ++ ")")) (zip [1..] capturePouch)
+                      mapM_ (\(index, (name, _, _, rarity, _)) -> putStrLn (show index ++ ": " ++ show name ++ " (" ++ show rarity ++ ")")) (zip [1..] capturePouch)
                       putStr "Which bird would you like to sell? "
                       hFlush stdout
                       birdIndex <- getLine
@@ -349,7 +411,63 @@ repl = do
                   go gameState g
 
             NodeType _ _ -> do
-              putStrLn "The node you are standing on is not interactable. Back to Idle mode."
-              go (togglePlayerState gameState) g
+              hFlush stdout
+              line <- getLine
+
+              case parseInput parseActionCmd line of
+                Nothing -> do
+                  putStrLn "I'm sorry, I do not understand."
+                  go gameState g
+
+                Just UseItem -> do
+                  -- still shows all the items and ask for item index, but only allow energy drink to be used
+                  putStrLn "You look at your item pouch to see if there are any items you want to use."
+                  if null itemPouch
+                    then do
+                      putStrLn "You do not have any items to use."
+                      go gameState g
+                    else do
+                      putStrLn "You have the following items:"
+                      mapM_ (\(index, (name, quantity)) -> putStrLn (show index ++ ": " ++ show name ++ " (" ++ show quantity ++ ")")) (zip [1..] itemPouch)
+                      putStr "Which item would you like to use? "
+                      hFlush stdout
+                      itemIndex <- getLine
+                      let index = read itemIndex :: Int
+                      if index < 1 || index > length itemPouch
+                        then do
+                          putStrLn "Invalid item index."
+                          go gameState g
+                        else do
+                          let (itemName, quantity) = itemPouch !! (index - 1)
+                          putStrLn ("You used [ " ++ show itemName ++ " ].")
+
+                          case itemName of
+                            EnergyDrink -> do
+                              putStrLn "You used the energy drink and feel refreshed."
+                              go (updateStamina (removeItemFromItemPouch gameState itemName 1) 50) g
+
+                            _ -> do
+                              putStrLn "You cannot use this item here."
+                              go gameState g
+
+
+                Just TreeDisplay -> do
+                  let (s, hasParents, hasMoreBranches) = drawCurrentSubTreeBinZip z
+                  if hasMoreBranches
+                    then putStrLn "There are more branches, but your eyes cannot see that far."
+                    else putStrLn ""
+                  putStrLn $ reverseTree s
+                  if hasParents
+                    then putStrLn "\n You can climb down, but looking down is too scary for you."
+                    else putStrLn "\nYou are at the root. Lets climb up."
+                  go gameState g
+
+                Just QuitAction -> do
+                  putStrLn "You ended the action."
+                  go (togglePlayerState gameState) g
+
+                _ -> do
+                  putStrLn "I'm sorry, I do not understand."
+                  go gameState g
 
 main = repl

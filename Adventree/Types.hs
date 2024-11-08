@@ -19,6 +19,8 @@ data ActionCmd =
   | BirdFeed -- Feed a bird
   | BirdDisplay -- Display a bird information
 
+  | UseItem -- Use an item
+
   | StoreBuy -- Buy from a store
   | StoreSell -- Sell to a store
   | StoreDisplay -- Display a store
@@ -98,8 +100,10 @@ data BirdName = Pigeon
   | Roc
   deriving (Show, Eq)
 
--- bird name + description + chance + rarity + price + price deviation (gain or loss percentage from the base price)
-type BirdType = (BirdName, String, Float, BirdRarity)
+type BirdDifficulty = Int
+
+-- bird name + description + chance + rarity + hardness of the bird
+type BirdType = (BirdName, String, Float, BirdRarity, BirdDifficulty)
 
 data StoreName = PigeonClub
   | DuckHouse
@@ -142,6 +146,6 @@ data NodeType = NodeType BaseNodeType Bool
 
 instance Show NodeType where
   show (NodeType _ False) = "???"
-  show (NodeType (Bird (name, _, _, rarity)) True) = show name ++ " (" ++ show rarity ++ ")"
+  show (NodeType (Bird (name, _, _, rarity, _)) True) = show name ++ " (" ++ show rarity ++ ")"
   show (NodeType (Store (name, _, _)) True) = show name
   show (NodeType baseNodeType True) = show baseNodeType

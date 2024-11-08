@@ -137,9 +137,9 @@ parseQuit = do
 -- Group of ActionCmd parsers
 parseActionCmd :: Parser String ActionCmd
 parseActionCmd = parseBirdCapture
-  <|> parseBirdFeed
   <|> parseStoreBuy
   <|> parseStoreSell
+  <|> parseUseItem
   <|> parseActionDisplay
   <|> parseJumpPortal
   <|> parseQuitAction
@@ -148,11 +148,6 @@ parseBirdCapture :: Parser String ActionCmd
 parseBirdCapture = do
   match "capture" <|> match "c"
   return BirdCapture
-
-parseBirdFeed :: Parser String ActionCmd
-parseBirdFeed = do
-  match "feed" <|> match "f"
-  return BirdFeed
 
 parseStoreBuy :: Parser String ActionCmd
 parseStoreBuy = do
@@ -163,6 +158,11 @@ parseStoreSell :: Parser String ActionCmd
 parseStoreSell = do
   match "sell" <|> match "s"
   return StoreSell
+
+parseUseItem :: Parser String ActionCmd
+parseUseItem = do
+  match "use" <|> match "u"
+  return UseItem
 
 parseActionDisplay :: Parser String ActionCmd
 parseActionDisplay = do
