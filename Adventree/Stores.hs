@@ -16,11 +16,17 @@ stores = [
 getStore :: StoreName -> StoreType
 getStore name = head $ filter (\(n, _, _) -> n == name) stores
 
--- Store 1 for lvl < 3, then < 6, < 8, < 9, and otherwise
-getStoreByLevel :: Int -> StoreType
-getStoreByLevel level
+getStoreByLevelDefault :: TreeLevel -> StoreType
+getStoreByLevelDefault level
   | level < 3 = getStore PigeonClub
   | level < 6 = getStore DuckHouse
   | level < 8 = getStore EagleDC
   | level < 9 = getStore FlamingoResort
   | otherwise = getStore PhoenixHall
+
+addKeyToStore :: StoreType -> TreeLevel -> StoreType
+addKeyToStore (name, desc, items) level = (name, desc, items ++ [(PortalKey (level + 1), 100 * (level + 1))])
+
+-- return store by level, and add a (PortalKey (level + 1)) item to the store
+getStoreByLevel :: TreeLevel -> StoreType
+getStoreByLevel level = addKeyToStore (getStoreByLevelDefault level) level

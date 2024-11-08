@@ -55,12 +55,11 @@ insertStore gen level tree = fst $ traverseAndInsert gen tree 0
              else let (newRight, gRight) = traverseAndInsert g1 t2 (depth + 1)
                   in (B node t1 newRight, gRight)
 
-generateTreeWithSeed :: Int -> TreeLevel -> Bin NodeType
-generateTreeWithSeed seed level =
-  let gen = mkStdGen seed
-      (tree, _) = generateRandomTree gen level
-      treeWithStore = insertStore gen level tree
-  in B (NodeType (Portal level) True) (getLeft treeWithStore) (getRight treeWithStore)
+generateTreeWithSeed :: (RandomGen g) => TreeLevel -> g -> (Bin NodeType, g)
+generateTreeWithSeed level g = do
+    let (tree, g') = generateRandomTree g level
+    let treeWithStore = insertStore g' level tree
+    (B (NodeType (Portal level) True) (getLeft treeWithStore) (getRight treeWithStore), g)
 
 getLeft :: Bin a -> Bin a
 getLeft (B _ left _) = left

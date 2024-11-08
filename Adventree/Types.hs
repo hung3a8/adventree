@@ -25,6 +25,8 @@ data ActionCmd =
 
   | TreeDisplay
 
+  | JumpPortal -- Jump to a portal
+
   | QuitAction -- Quit the action
   deriving (Show, Read)
 
@@ -47,9 +49,9 @@ type GoldPouch = Int
 
 type Stamina = Int
 
-type ItemPouch = [(ItemName, Int)] -- Item name and quantity
+type ItemPouch = [(Item, Int)] -- Item name and quantity
 
-type GameState = (BinZip NodeType, PlayerState, Stamina, CapturePouch, GoldPouch, ItemPouch)
+type GameState = ([BinZip NodeType], TreeLevel, PlayerState, Stamina, CapturePouch, GoldPouch, ItemPouch)
 
 data PlayerState = Idle | InAction deriving (Read)
 
@@ -107,16 +109,23 @@ data StoreName = PigeonClub
   | PhoenixHall
   deriving (Show, Eq)
 
-data ItemName =
+data Item =
   BirdSeed
   | BirdCage
   | EnergyDrink
-  deriving (Show, Eq)
+  | PortalKey TreeLevel
+  deriving (Eq)
+
+instance Show Item where
+  show BirdSeed = "Bird Seed"
+  show BirdCage = "Bird Cage"
+  show EnergyDrink = "Energy Drink"
+  show (PortalKey level) = "Portal Key to Level " ++ show level
 
 type Price = Int
 
 -- store name + description + items
-type StoreType = (StoreName, String, [(ItemName, Price)])
+type StoreType = (StoreName, String, [(Item, Price)])
 
 data BirdRarity = VeryCommon | Common | Uncommon | Rare | VeryRare | Mythological
   deriving (Show, Eq)

@@ -12,19 +12,26 @@ import System.Random
 import Control.Concurrent (threadDelay)
 import Data.Tree (drawTree)
 import System.Posix.Internals (puts)
+import Data.List (unfoldr)
 import Control.Monad.Accum (MonadAccum(add))
 
 seed :: Int
 seed = 75
 
-tree :: Bin NodeType
-tree = generateTreeWithSeed seed 10
+-- Function to unfold trees using the previous tree's random generator
+unfoldTrees :: (RandomGen g) => g -> TreeLevel -> [Bin NodeType]
+unfoldTrees gen level = unfoldr (\(g, lvl) -> let (tree, g') = generateTreeWithSeed lvl g in Just (tree, (g', lvl + 1))) (gen, level)
+
+-- Generate 11 different trees with levels from 0 to 10
+trees :: [Bin NodeType]
+trees = take 11 $ unfoldTrees (mkStdGen seed) 0
 
 maxStamina :: Int
 maxStamina = 50
 
 initialState :: GameState
-initialState = ((Hole, tree), Idle, maxStamina, [], 0, [])
+-- initial state is the list of all trees a
+initialState = (map (Hole,) trees, 0, Idle, maxStamina, [], 1000000, [])
 
 repl :: IO ()
 repl = do
@@ -33,7 +40,9 @@ repl = do
   go initialState (mkStdGen seed) where
     go :: (RandomGen g) => GameState -> g -> IO ()
     go gameState g = do
-      let (z, state, stamina, capturePouch, goldPouch, itemPouch) = gameState
+      -- let (z, state, stamina, capturePouch, goldPouch, itemPouch) = gameState
+      let (zs, level, state, stamina, capturePouch, goldPouch, itemPouch) = gameState
+      let z = zs !! level
       putStrLn ""
 
       case snd z of
@@ -42,115 +51,111 @@ repl = do
         B node _ _  -> do
           putStrLn (displayNode node)
 
-      let level = getTreeLevel (snd z)
+      putStr ("(Stamina: " ++ show stamina ++  ") " ++ "(Level: " ++ show level ++ ") " ++ show state ++ "> ")
 
       case state of
         Idle -> do
-          putStr ("(" ++ show stamina ++  ") " ++ show state ++ "> ")
-
           hFlush stdout
           line <- getLine
 
           case parseInput parseIdleCmd line of
-              Nothing -> do
-                putStrLn "I'm sorry, I do not understand."
-                go gameState g
+            Nothing -> do
+              putStrLn "I'm sorry, I do not understand."
+              go gameState g
 
-              Just GoLeft ->
-                case z of
-                  (c, B node t1 t2) ->
-                    go (updateBinZip gameState (B0 c (reveal t2) node, reveal t1)) g
-                  (c, L _) -> do
-                    putStrLn "You cannot climb any further."
-                    go gameState g
+            Just GoLeft ->
+              case z of
+                (c, B node t1 t2) ->
+                  go (updateBinZipAtLevel gameState (B0 c (reveal t2) node, reveal t1) level) g
+                (c, L _) -> do
+                  putStrLn "You cannot climb any further."
+                  go gameState g
 
-              Just GoRight -> do
-                case z of
-                  (c, B node t1 t2) ->
-                    go (updateBinZip gameState (B1 (reveal t1) c node, reveal t2)) g
-                  (c, L _) -> do
-                    putStrLn "You cannot climb any further."
-                    go gameState g
+            Just GoRight -> do
+              case z of
+                (c, B node t1 t2) ->
+                  go (updateBinZipAtLevel gameState (B1 (reveal t1) c node, reveal t2) level) g
+                (c, L _) -> do
+                  putStrLn "You cannot climb any further."
+                  go gameState g
 
-              Just GoDown ->
-                case z of
-                  (B0 c t2 node, t) -> go (updateBinZip gameState (c, B node t t2)) g
-                  (B1 t1 c node, t) -> go (updateBinZip gameState (c, B node t1 t))g
-                  (Hole,t) -> do
-                    putStrLn "You are already at the root."
-                    putStrLn "You cannot climb down any further."
-                    go gameState g
+            Just GoDown ->
+              case z of
+                (B0 c t2 node, t) -> go (updateBinZipAtLevel gameState (c, B node t t2) level) g
+                (B1 t1 c node, t) -> go (updateBinZipAtLevel gameState (c, B node t1 t) level) g
+                (Hole,t) -> do
+                  putStrLn "You are already at the root."
+                  putStrLn "You cannot climb down any further."
+                  go gameState g
 
-              Just Display -> do
-                let (s, hasParents, hasMoreBranches) = drawCurrentSubTreeBinZip z
-                if hasMoreBranches
-                  then putStrLn "There are more branches, but your eyes cannot see that far."
-                  else putStrLn ""
-                putStrLn $ reverseTree s
-                if hasParents
-                  then putStrLn "\n You can climb down, but looking down is too scary for you."
-                  else putStrLn "\nYou are at the root. Lets climb up."
-                go gameState g
+            Just Display -> do
+              let (s, hasParents, hasMoreBranches) = drawCurrentSubTreeBinZip z
+              if hasMoreBranches
+                then putStrLn "There are more branches, but your eyes cannot see that far."
+                else putStrLn ""
+              putStrLn $ reverseTree s
+              if hasParents
+                then putStrLn "\n You can climb down, but looking down is too scary for you."
+                else putStrLn "\nYou are at the root. Lets climb up."
+              go gameState g
 
-              Just IntoAction -> do
-                putStrLn "You prepare for some actions."
-                go (togglePlayerState gameState) g
+            Just IntoAction -> do
+              putStrLn "You prepare for some actions."
+              go (togglePlayerState gameState) g
 
-              Just Sleep -> do
-                putStrLn "You decided to sleep for a while."
-                putStrLn "You fell asleep..."
-                threadDelay 6000000
+            Just Sleep -> do
+              putStrLn "You decided to sleep for a while."
+              putStrLn "You fell asleep..."
+              threadDelay 6000000
 
-                -- Random between 0 and 1, if 0 then recover the stamina, if 1 then both recover stamina and spawn a bird randomly
-                let (choice, g') = randomR (0, 10 :: Int) g
-                if choice == 0
-                  then do
-                    let (newTree, g'') = spawnBird (snd z) g'
-                    case newTree of
-                      Just t -> do
-                        putStrLn "You woke up feeling refreshed."
-                        putStrLn "You feel the branch above you is shaking. Better go check it out."
-                        let newz = (fst z, t)
-                        go (updateStamina (updateBinZip gameState newz) maxStamina) g''
-                      Nothing -> do
-                        putStrLn "You woke up feeling refreshed."
-                        putStrLn "You did not find any bird nearby."
-                        go (setStamina gameState maxStamina) g''
-                  else do
-                    putStrLn "You woke up feeling refreshed."
-                    go (setStamina gameState maxStamina) g'
+              -- Random between 0 and 1, if 0 then recover the stamina, if 1 then both recover stamina and spawn a bird randomly
+              let (choice, g') = randomR (0, 10 :: Int) g
+              if choice == 0
+                then do
+                  let (newTree, g'') = spawnBird (snd z) g'
+                  case newTree of
+                    Just t -> do
+                      putStrLn "You woke up feeling refreshed."
+                      putStrLn "You feel the branch above you is shaking. Better go check it out."
+                      let newz = (fst z, t)
+                      go (updateStamina (updateBinZipAtLevel gameState newz level) maxStamina) g''
+                    Nothing -> do
+                      putStrLn "You woke up feeling refreshed."
+                      putStrLn "You did not find any bird nearby."
+                      go (setStamina gameState maxStamina) g''
+                else do
+                  putStrLn "You woke up feeling refreshed."
+                  go (setStamina gameState maxStamina) g'
 
-              Just ShowCapturePouch -> do
-                putStrLn "You have captured the following birds:"
-                mapM_ (\(index, (name, _, _, rarity)) -> putStrLn (show index ++ ": " ++ show name ++ " (" ++ show rarity ++ ")")) (zip [1..] capturePouch)
-                go gameState g
+            Just ShowCapturePouch -> do
+              putStrLn "You have captured the following birds:"
+              mapM_ (\(index, (name, _, _, rarity)) -> putStrLn (show index ++ ": " ++ show name ++ " (" ++ show rarity ++ ")")) (zip [1..] capturePouch)
+              go gameState g
 
-              Just ShowGoldPouch -> do
-                putStrLn ("You have " ++ show goldPouch ++ " gold.")
-                go gameState g
+            Just ShowGoldPouch -> do
+              putStrLn ("You have " ++ show goldPouch ++ " gold.")
+              go gameState g
 
-              Just ShowItemPouch -> do
-                putStrLn "You have the following items:"
-                mapM_ (\(index, (name, quantity)) -> putStrLn (show index ++ ": " ++ show name ++ " (" ++ show quantity ++ ")")) (zip [1..] itemPouch)
-                go gameState g
+            Just ShowItemPouch -> do
+              putStrLn "You have the following items:"
+              mapM_ (\(index, (name, quantity)) -> putStrLn (show index ++ ": " ++ show name ++ " (" ++ show quantity ++ ")")) (zip [1..] itemPouch)
+              go gameState g
 
-              Just DisplayCheat -> do
-                -- reveal z tree
-                let (s, _, _) = drawCurrentSubTreeBinZip (fst z, revealAll (snd z))
-                putStrLn $ reverseTree s
-                go gameState g
+            Just DisplayCheat -> do
+              -- reveal z tree
+              let (s, _, _) = drawCurrentSubTreeBinZip (fst z, revealAll (snd z))
+              putStrLn $ reverseTree s
+              go gameState g
 
-              Just Quit -> do
-                putStrLn "Okay."
-                putStrLn "You ended the game over here:\n"
-                let (s, _, _) = drawCurrentSubTreeBinZip z
-                putStrLn $ reverseTree s
-                putStrLn "Goodbye."
-                return ()
+            Just Quit -> do
+              putStrLn "Okay."
+              putStrLn "You ended the game over here:\n"
+              let (s, _, _) = drawCurrentSubTreeBinZip z
+              putStrLn $ reverseTree s
+              putStrLn "Goodbye."
+              return ()
 
         InAction -> do
-          putStr (show state ++ "> ")
-
           let node = getBinZipCurrentNode z
 
           case node of
@@ -168,7 +173,7 @@ repl = do
                   putStrLn "Nice! You captured the bird."
                   putStrLn ("[ " ++ show node ++ " ] was added to your capture pouch.")
                   let newTree = replaceBinZipCurrentNode z (NodeType Empty True)
-                  go (updateBinZip (addBirdToCapturePouch gameState bird) newTree) g
+                  go (updateBinZipAtLevel (addBirdToCapturePouch gameState bird) newTree level) g
 
                 Just BirdFeed -> do
                   putStrLn "You fed the bird."
@@ -275,6 +280,44 @@ repl = do
                     then putStrLn "\n You can climb down, but looking down is too scary for you."
                     else putStrLn "\nYou are at the root. Lets climb up."
                   go gameState g
+
+                Just QuitAction -> do
+                  putStrLn "You ended the action."
+                  go (togglePlayerState gameState) g
+
+                _ -> do
+                  putStrLn "I'm sorry, I do not understand."
+                  go gameState g
+
+            NodeType (Portal level) _ -> do
+              hFlush stdout
+              line <- getLine
+
+              case parseInput parseActionCmd line of
+                Nothing -> do
+                  putStrLn "I'm sorry, I do not understand."
+                  go gameState g
+
+                Just JumpPortal -> do
+                  putStr "Choose a level to jump to: "
+                  hFlush stdout
+                  newLevel <- getLine
+                  let newLevel' = read newLevel :: Int
+                  if newLevel' < 0 || newLevel' > 10
+                    then do
+                      putStrLn "Invalid level."
+                      go gameState g
+                    else do
+                      putStrLn ("You jumped to level " ++ show newLevel' ++ ".")
+
+                  -- check if user has the portal key to jump to the level
+                  if PortalKey newLevel' `elem` map fst itemPouch
+                    then do
+                      putStrLn "You used the portal key to jump to the new level."
+                      go (changeLevel gameState newLevel') g
+                    else do
+                      putStrLn "You do not have the portal key to jump to the new level."
+                      go gameState g
 
                 Just QuitAction -> do
                   putStrLn "You ended the action."

@@ -5,40 +5,46 @@ import Adventree.Types
 import Adventree.Birds
 
 togglePlayerState :: GameState -> GameState
-togglePlayerState (z, state, stamina, capturePouch, goldPouch, itemPouch) = case state of
-  Idle -> (z, InAction, stamina, capturePouch, goldPouch, itemPouch)
-  InAction -> (z, Idle, stamina, capturePouch, goldPouch, itemPouch)
+togglePlayerState (zs, level, state, stamina, capturePouch, goldPouch, itemPouch) = case state of
+  Idle -> (zs, level, InAction, stamina, capturePouch, goldPouch, itemPouch)
+  InAction -> (zs, level, Idle, stamina, capturePouch, goldPouch, itemPouch)
 
 updateStamina :: GameState -> Int -> GameState
-updateStamina (z, state, stamina, capturePouch, goldPouch, itemPouch) delta =
-  (z, state, stamina + delta, capturePouch, goldPouch, itemPouch)
+updateStamina (zs, level, state, stamina, capturePouch, goldPouch, itemPouch) delta = (zs, level, state, stamina + delta, capturePouch, goldPouch, itemPouch)
 
 setStamina :: GameState -> Int -> GameState
-setStamina (z, state, _, capturePouch, goldPouch, itemPouch) stamina =
-  (z, state, stamina, capturePouch, goldPouch, itemPouch)
+setStamina (zs, level, state, _, capturePouch, goldPouch, itemPouch) stamina = (zs, level, state, stamina, capturePouch, goldPouch, itemPouch)
 
 addBirdToCapturePouch :: GameState -> BirdType -> GameState
-addBirdToCapturePouch (z, state, stamina, capturePouch, goldPouch, itemPouch) bird =
-  (z, state, stamina, bird : capturePouch, goldPouch, itemPouch)
+addBirdToCapturePouch (zs, level, state, stamina, capturePouch, goldPouch, itemPouch) bird = (zs, level, state, stamina, bird : capturePouch, goldPouch, itemPouch)
 
 addGoldToGoldPouch :: GameState -> Int -> GameState
-addGoldToGoldPouch (z, state, stamina, capturePouch, goldPouch, itemPouch) gold =
-  (z, state, stamina, capturePouch, goldPouch + gold, itemPouch)
+addGoldToGoldPouch (zs, level, state, stamina, capturePouch, goldPouch, itemPouch) gold = (zs, level, state, stamina, capturePouch, goldPouch + gold, itemPouch)
 
-addItemToItemPouch :: GameState -> ItemName -> Int -> GameState
-addItemToItemPouch (z, state, stamina, capturePouch, goldPouch, itemPouch) item quantity =
-  (z, state, stamina, capturePouch, goldPouch, updateItemPouch item quantity itemPouch)
+changeLevel :: GameState -> TreeLevel -> GameState
+changeLevel (zs, _, state, stamina, capturePouch, goldPouch, itemPouch) level = (zs, level, state, stamina, capturePouch, goldPouch, itemPouch)
+
+addItemToItemPouch :: GameState -> Item -> Int -> GameState
+addItemToItemPouch (zs, level, state, stamina, capturePouch, goldPouch, itemPouch) item quantity =
+  (zs, level, state, stamina, capturePouch, goldPouch, updateItemPouch item quantity itemPouch)
   where
-    updateItemPouch :: ItemName -> Int -> ItemPouch -> ItemPouch
+    updateItemPouch :: Item -> Int -> ItemPouch -> ItemPouch
     -- find the item in the item pouch, increase the quantity if it exists
     updateItemPouch item quantity [] = [(item, quantity)]
-    updateItemPouch item quantity ((itemName, itemQuantity):rest) =
+    updateItemPouch item quantity ((itemName, itemQuantity) : rest) =
       if itemName == item
         then (itemName, itemQuantity + quantity) : rest
         else (itemName, itemQuantity) : updateItemPouch item quantity rest
 
-updateBinZip :: GameState -> BinZip NodeType -> GameState
-updateBinZip (z, state, stamina, capturePouch, goldPouch, itemPouch) z' = (z', state, stamina, capturePouch, goldPouch, itemPouch)
+updateBinZipAtLevel :: GameState -> BinZip NodeType -> TreeLevel -> GameState
+updateBinZipAtLevel (zs, level, state, stamina, capturePouch, goldPouch, itemPouch) z updateAtLevel =
+  (updateBinZip' zs z updateAtLevel, level, state, stamina, capturePouch, goldPouch, itemPouch) where
+    updateBinZip' :: [BinZip NodeType] -> BinZip NodeType -> TreeLevel -> [BinZip NodeType]
+    updateBinZip' [] _ _ = []
+    updateBinZip' (z':zs) z level =
+      if level == 0
+        then z : zs
+        else z' : updateBinZip' zs z (level - 1)
 
 -- Choose a random Empty node and spawn a bird. If on a branch and the branch is empty, randomly choose to spawn the bird on the branch node or left/right child.
 -- If the branch is not empty, randomly choose to spawn the bird on the left or right child.

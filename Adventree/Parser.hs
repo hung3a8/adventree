@@ -141,6 +141,7 @@ parseActionCmd = parseBirdCapture
   <|> parseStoreBuy
   <|> parseStoreSell
   <|> parseActionDisplay
+  <|> parseJumpPortal
   <|> parseQuitAction
 
 parseBirdCapture :: Parser String ActionCmd
@@ -169,6 +170,11 @@ parseActionDisplay = do
   (match "bird" >> return BirdDisplay) <|>
     (match "store" >> return StoreDisplay) <|>
     (match "tree" >> return TreeDisplay)
+
+parseJumpPortal :: Parser String ActionCmd
+parseJumpPortal = do
+  match "jump" <|> match "j"
+  return JumpPortal
 
 parseQuitAction :: Parser String ActionCmd
 parseQuitAction = do
