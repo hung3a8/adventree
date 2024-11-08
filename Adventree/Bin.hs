@@ -22,7 +22,7 @@ treeFromBin (B node t1 t2) = Node (show node) [treeFromBin t1, treeFromBin t2]
 displayNode :: NodeType -> String
 displayNode node = case node of
   NodeType _ False -> "You see a mysterious node."
-  NodeType (Bird (name, description, chance, rarity)) True -> "You see a bird named " ++ name ++ "(" ++ show rarity ++ ")."
+  NodeType (Bird bird) True -> "You see a bird named " ++ show node ++ "."
   NodeType (Store name) True -> "You see a store named " ++ name ++ "."
   NodeType Empty True -> "You see an empty node."
   NodeType (Portal dest) True -> "You see a portal to tree " ++ show dest ++ "."
@@ -73,3 +73,18 @@ depthExceedsLimit :: Int -> Bin a -> Bool
 depthExceedsLimit 0 _ = True
 depthExceedsLimit _ (L _) = False
 depthExceedsLimit n (B _ t1 t2) = depthExceedsLimit (n - 1) t1 || depthExceedsLimit (n - 1) t2
+
+replaceBinZipCurrentNode :: BinZip a -> a -> BinZip a
+replaceBinZipCurrentNode (c, L _) node = (c, L node)
+replaceBinZipCurrentNode (c, B _ t1 t2) node = (c, B node t1 t2)
+
+getBinZipCurrentNode :: BinZip a -> a
+getBinZipCurrentNode (_, L node) = node
+getBinZipCurrentNode (_, B node _ _) = node
+
+isNodeType :: BaseNodeType -> BaseNodeType -> Bool
+isNodeType (Bird _) (Bird _) = True
+isNodeType (Store _) (Store _) = True
+isNodeType Empty Empty = True
+isNodeType (Portal _) (Portal _) = True
+isNodeType _ _ = False

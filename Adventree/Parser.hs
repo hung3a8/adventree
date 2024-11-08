@@ -1,7 +1,7 @@
 {-# OPTIONS_GHC -Wno-noncanonical-monad-instances #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Use lambda-case" #-}
-module Adventree.Parser (runParser, parseCmd, parseInput) where
+module Adventree.Parser (runParser, parseIdleCmd, parseActionCmd, parseInput) where
 
 import Adventree.Types
 import Data.Maybe
@@ -9,7 +9,6 @@ import Data.Char
 import Control.Applicative
 
 newtype Parser tok a = Parser { runParser :: [tok] -> Maybe (a,[tok]) }
-
 
 instance Monad (Parser tok) where
   -- return :: a -> Parser tok a
@@ -90,34 +89,74 @@ number =
     <|> (match "eight" >> return 8)
     <|> (match "nine" >> return 9)
 
--- parseCmd is our general-purpose parser for commands, which can be
--- either climbing commands, meditation commands, or quitting.
-parseCmd :: Parser String Cmd
-parseCmd = parseClimb <|> parseDisplay <|> parseDisplayCheat <|> parseQuit
+-- Group of IdleCmd parsers
+parseIdleCmd :: Parser String IdleCmd
+parseIdleCmd = parseClimb <|> parseIntoAction <|> parseShowState <|> parseDisplay <|> parseDisplayCheat <|> parseQuit
 
 -- Parse a climbing command.
-parseClimb :: Parser String Cmd
+parseClimb :: Parser String IdleCmd
 parseClimb = do
-  match "climb" <|> match "go"
+  match "climb" <|> match "go" <|> match "move" <|> match "m"
   (match "down" >> return GoDown) <|>
     (match "left" >> return GoLeft) <|>
     (match "right" >> return GoRight)
 
-parseDisplay :: Parser String Cmd
+parseIntoAction :: Parser String IdleCmd
+parseIntoAction = do
+  match "action" <|> match "a"
+  return IntoAction
+
+parseShowState :: Parser String IdleCmd
+parseShowState = do
+  match "show" <|> match "s"
+  ((match "capture" <|> match "pouch") >> return ShowCapturePouch) <|>
+    ((match "gold" <|> match "money") >> return ShowGoldPouch)
+
+parseDisplay :: Parser String IdleCmd
 parseDisplay = do
-  match "display" <|> match "show"
+  match "display" <|> match "d"
   return Display
 
-parseDisplayCheat :: Parser String Cmd
+parseDisplayCheat :: Parser String IdleCmd
 parseDisplayCheat = do
-  match "display_cheat" <|> match "show_cheat"
+  match "display_cheat" <|> match "show_cheat" <|> match "dc"
   return DisplayCheat
 
 -- Parse a quit command
-parseQuit :: Parser String Cmd
+parseQuit :: Parser String IdleCmd
 parseQuit = do
   match "quit" <|> match "q"
   return Quit
+
+-- Group of ActionCmd parsers
+parseActionCmd :: Parser String ActionCmd
+parseActionCmd = parseBirdCapture <|> parseBirdFlee <|> parseBirdFeed <|> parseBirdDisplay <|> parseQuitAction
+
+parseBirdCapture :: Parser String ActionCmd
+parseBirdCapture = do
+  match "capture" <|> match "catch" <|> match "c"
+  return BirdCapture
+
+parseBirdFlee :: Parser String ActionCmd
+parseBirdFlee = do
+  match "flee" <|> match "run" <|> match "ff"
+  return BirdFlee
+
+parseBirdFeed :: Parser String ActionCmd
+parseBirdFeed = do
+  match "feed" <|> match "give" <|> match "f"
+  return BirdFeed
+
+parseBirdDisplay :: Parser String ActionCmd
+parseBirdDisplay = do
+  match "display" <|> match "d"
+  (match "bird" >> return BirdDisplay) <|>
+    (match "tree" >> return TreeDisplay)
+
+parseQuitAction :: Parser String ActionCmd
+parseQuitAction = do
+  match "quit" <|> match "q"
+  return QuitAction
 
 -- Finally, we export a function that runs a parser on the entire input string, broken up into words.
 -- This function runs in any MonadFail monad, to deal with the possiblity of failure.

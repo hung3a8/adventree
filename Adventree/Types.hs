@@ -1,6 +1,17 @@
 module Adventree.Types where
 
-data Cmd = GoLeft | GoRight | GoDown | Display | DisplayCheat | Quit
+data IdleCmd = GoLeft | GoRight | GoDown | IntoAction | ShowCapturePouch | ShowGoldPouch | Display | DisplayCheat | Quit
+  deriving (Show, Read)
+
+data ActionCmd =
+  BirdCapture -- Capture a bird
+  | BirdFlee -- Flee from a bird
+  | BirdFeed -- Feed a bird
+  | BirdDisplay -- Display a bird information
+
+  | TreeDisplay
+
+  | QuitAction -- Quit the action
   deriving (Show, Read)
 
 -- Generic Binary Tree Type, but a branch node can have a value and two children
@@ -16,9 +27,13 @@ data BinCxt a = Hole
 
 type BinZip a = (BinCxt a, Bin a)
 
+type CapturePouch = [BirdType]
+
+type GoldPouch = Int
+
 data PlayerState = Idle | InAction deriving (Show, Read)
 
-type GameState = (BinZip NodeType, PlayerState)
+type GameState = (BinZip NodeType, PlayerState, CapturePouch, GoldPouch)
 
 type TreeLevel = Int
 

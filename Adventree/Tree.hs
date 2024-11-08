@@ -10,7 +10,6 @@ minDepth = 8
 maxDepth :: Int
 maxDepth = 12
 
--- Function to generate a random binary tree, cannot generate trees with depth > 10
 generateRandomTree :: (RandomGen g) => g -> TreeLevel -> Bin NodeType
 generateRandomTree gen level = fst $ generateTree gen 0 level
   where
