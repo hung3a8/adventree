@@ -93,7 +93,7 @@ number =
 -- parseCmd is our general-purpose parser for commands, which can be
 -- either climbing commands, meditation commands, or quitting.
 parseCmd :: Parser String Cmd
-parseCmd = parseClimb <|> parseDisplay <|> parseQuit
+parseCmd = parseClimb <|> parseDisplay <|> parseDisplayCheat <|> parseQuit
 
 -- Parse a climbing command.
 parseClimb :: Parser String Cmd
@@ -107,6 +107,11 @@ parseDisplay :: Parser String Cmd
 parseDisplay = do
   match "display" <|> match "show"
   return Display
+
+parseDisplayCheat :: Parser String Cmd
+parseDisplayCheat = do
+  match "display_cheat" <|> match "show_cheat"
+  return DisplayCheat
 
 -- Parse a quit command
 parseQuit :: Parser String Cmd
